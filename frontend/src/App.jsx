@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+// App.js
+import React, { useState } from 'react';
+import axios from 'axios';
+
+// Create Axios instance with base URL for backend
+const API = axios.create({ baseURL: 'http://localhost:8000' });
 
 // Main App Component
 const App = () => {
   const [currentPage, setCurrentPage] = useState('profile'); // 'profile' or 'users'
-  const [users, setUsers] = useState([]);
   const [pageTransition, setPageTransition] = useState(false);
-
-  const addUser = (user) => {
-    setUsers(prevUsers => [...prevUsers, { ...user, id: Date.now() }]);
-  };
 
   const navigateToPage = (page) => {
     setPageTransition(true);
@@ -22,16 +22,16 @@ const App = () => {
     <div className="App" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div className={`transition-opacity duration-300 ${pageTransition ? 'opacity-0' : 'opacity-100'}`}>
         {currentPage === 'profile' ? (
-          <ProfileForm addUser={addUser} navigateToPage={navigateToPage} />
+          <ProfileForm navigateToPage={navigateToPage} />
         ) : (
-          <UserList users={users} navigateToPage={navigateToPage} />
+          <UserList navigateToPage={navigateToPage} />
         )}
       </div>
-      
+
       {/* Global Styles */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
+
         @keyframes fade-in {
           from {
             opacity: 0;
@@ -42,7 +42,7 @@ const App = () => {
             transform: translateY(0);
           }
         }
-        
+
         @keyframes glow {
           0%, 100% {
             box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
@@ -51,7 +51,7 @@ const App = () => {
             box-shadow: 0 0 30px rgba(147, 51, 234, 0.8);
           }
         }
-        
+
         @keyframes float {
           0%, 100% {
             transform: translateY(0px);
@@ -60,23 +60,23 @@ const App = () => {
             transform: translateY(-10px);
           }
         }
-        
+
         .animate-fade-in {
           animation: fade-in 1s ease-out;
         }
-        
+
         .animate-glow {
           animation: glow 2s ease-in-out infinite;
         }
-        
+
         .animate-float {
           animation: float 3s ease-in-out infinite;
         }
-        
+
         * {
           scroll-behavior: smooth;
         }
-        
+
         body {
           margin: 0;
           padding: 0;
@@ -90,13 +90,13 @@ const App = () => {
 };
 
 // ProfileForm Component (Page 1)
-const ProfileForm = ({ addUser, navigateToPage }) => {
-  const [formData, setFormData] = useState({
+const ProfileForm = ({ navigateToPage }) => {
+  const [formData, setFormData] = React.useState({
     name: '',
     age: '',
-    fatherName: ''
+    fathername: ''
   });
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [isAnimating, setIsAnimating] = React.useState(false);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -105,23 +105,29 @@ const ProfileForm = ({ addUser, navigateToPage }) => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.name && formData.age && formData.fatherName) {
+    if (formData.name && formData.age && formData.fathername) {
       setIsAnimating(true);
-      addUser(formData);
-      setTimeout(() => {
-        setFormData({ name: '', age: '', fatherName: '' });
+      try {
+        // POST user to backend endpoint /register
+        await API.post('/register', formData);
+        setTimeout(() => {
+          setFormData({ name: '', age: '', fathername: '' });
+          setIsAnimating(false);
+          navigateToPage('users');
+        }, 1200);
+      } catch (error) {
+        alert('Error registering sorcerer. Please try again.');
         setIsAnimating(false);
-        navigateToPage('users');
-      }, 1200);
+      }
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-red-900 relative overflow-hidden">
       {/* Background Character Image */}
-      <div 
+      <div
         className="absolute inset-0 opacity-30"
         style={{
           backgroundImage: `url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&q=80')`,
@@ -148,6 +154,7 @@ const ProfileForm = ({ addUser, navigateToPage }) => {
           />
         ))}
       </div>
+
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
         <div className="w-full max-w-md">
           {/* Title */}
@@ -179,6 +186,7 @@ const ProfileForm = ({ addUser, navigateToPage }) => {
                     className="w-full px-4 py-3 bg-black/70 border border-blue-500/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-300 hover:border-blue-400/70"
                     placeholder="Enter your name..."
                     required
+                    autoComplete="off"
                   />
                 </div>
                 {/* Age Input */}
@@ -195,6 +203,8 @@ const ProfileForm = ({ addUser, navigateToPage }) => {
                     className="w-full px-4 py-3 bg-black/70 border border-purple-500/50 rounded-lg text-white placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 focus:outline-none transition-all duration-300 hover:border-purple-400/70"
                     placeholder="Enter your age..."
                     required
+                    autoComplete="off"
+                    min="1"
                   />
                 </div>
                 {/* Father's Name Input */}
@@ -205,14 +215,16 @@ const ProfileForm = ({ addUser, navigateToPage }) => {
                   </label>
                   <input
                     type="text"
-                    name="fatherName"
-                    value={formData.fatherName}
+                    name="fathername"
+                    value={formData.fathername}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-black/70 border border-red-500/50 rounded-lg text-white placeholder-gray-400 focus:border-red-400 focus:ring-2 focus:ring-red-400/20 focus:outline-none transition-all duration-300 hover:border-red-400/70"
                     placeholder="Enter Bloodline Holder..."
                     required
+                    autoComplete="off"
                   />
                 </div>
+
                 {/* Submit Button */}
                 <button
                   onClick={handleSubmit}
@@ -231,12 +243,11 @@ const ProfileForm = ({ addUser, navigateToPage }) => {
                         <span>REGISTERING SORCERER...</span>
                       </>
                     ) : (
-                      <>
-                        <span>⚡ REGISTER SORCERER ⚡</span>
-                      </>
+                      <span>⚡ REGISTER SORCERER ⚡</span>
                     )}
                   </div>
                 </button>
+
                 {/* Link to Users */}
                 <div className="text-center mt-6">
                   <button
@@ -256,15 +267,28 @@ const ProfileForm = ({ addUser, navigateToPage }) => {
 };
 
 // UserList Component (Page 2)
-const UserList = ({ users, navigateToPage }) => {
-  const [visibleCards, setVisibleCards] = useState([]);
+const UserList = ({ navigateToPage }) => {
+  const [visibleCards, setVisibleCards] = React.useState([]);
+  const [users, setUsers] = React.useState([]);
 
-  useEffect(() => {
-    // Animate cards appearing one by one
+  React.useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const response = await API.get('/users');
+        setUsers(response.data.users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        setUsers([]);
+      }
+    }
+    fetchUsers();
+  }, []);
+
+  React.useEffect(() => {
     setVisibleCards([]);
     users.forEach((_, index) => {
       setTimeout(() => {
-        setVisibleCards(prev => [...prev, index]);
+        setVisibleCards((prev) => [...prev, index]);
       }, index * 200);
     });
   }, [users]);
@@ -272,7 +296,7 @@ const UserList = ({ users, navigateToPage }) => {
   return (
     <div className="min-h-screen bg-gradient-to-bl from-indigo-900 via-black to-purple-900 relative">
       {/* Background Character Image */}
-      <div 
+      <div
         className="absolute inset-0 opacity-20"
         style={{
           backgroundImage: `url('https://images.unsplash.com/photo-1621570180008-de3b5cecbc40?w=1200&q=80')`,
@@ -299,6 +323,7 @@ const UserList = ({ users, navigateToPage }) => {
           />
         ))}
       </div>
+
       <div className="relative z-10 p-6">
         {/* Header */}
         <div className="text-center mb-12 animate-fade-in">
@@ -316,13 +341,16 @@ const UserList = ({ users, navigateToPage }) => {
             ✨ Add New Sorcerer ✨
           </button>
         </div>
+
         {/* User Cards */}
         {users.length === 0 ? (
           <div className="text-center animate-fade-in">
             <div className="bg-black/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-12 max-w-lg mx-auto animate-float">
               <div className="text-8xl mb-6">👻</div>
               <h3 className="text-2xl text-white mb-4 font-bold">No Sorcerers Registered</h3>
-              <p className="text-gray-400 text-lg">The registry is empty. Be the first to register and join the ranks of jujutsu sorcerers!</p>
+              <p className="text-gray-400 text-lg">
+                The registry is empty. Be the first to register and join the ranks of jujutsu sorcerers!
+              </p>
               <div className="mt-6">
                 <div className="w-16 h-1 bg-gradient-to-r from-purple-500 to-blue-500 mx-auto rounded-full"></div>
               </div>
@@ -340,10 +368,8 @@ const UserList = ({ users, navigateToPage }) => {
                 }`}
               >
                 <div className="relative group">
-                  {/* Card Glow Effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-blue-600/30 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
                   <div className="relative bg-black/60 backdrop-blur-xl border border-purple-500/40 rounded-2xl p-6 hover:border-purple-400/70 hover:scale-105 transform transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-purple-500/30">
-                    {/* Card Header */}
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center">
                         <div className="w-3 h-3 bg-blue-400 rounded-full mr-3 animate-pulse"></div>
@@ -353,7 +379,6 @@ const UserList = ({ users, navigateToPage }) => {
                         {index + 1}
                       </div>
                     </div>
-                    {/* User Info */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-blue-500/20">
                         <span className="text-blue-300 font-semibold flex items-center">
@@ -374,10 +399,9 @@ const UserList = ({ users, navigateToPage }) => {
                           <span className="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
                           Father:
                         </span>
-                        <span className="text-white font-bold text-lg">{user.fatherName}</span>
+                        <span className="text-white font-bold text-lg">{user.fathername}</span>
                       </div>
                     </div>
-                    {/* Status Badge */}
                     <div className="mt-6 pt-4 border-t border-gray-700/50">
                       <div className="flex items-center justify-between">
                         <span className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600/30 to-blue-600/30 border border-green-500/40 rounded-full text-green-300 text-sm font-bold">
@@ -387,7 +411,6 @@ const UserList = ({ users, navigateToPage }) => {
                         <div className="text-2xl">⚔️</div>
                       </div>
                     </div>
-                    {/* Rank Badge */}
                     <div className="absolute top-4 right-4">
                       <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold text-xs px-3 py-1 rounded-full shadow-lg">
                         RANK {Math.floor(Math.random() * 4) + 1}
@@ -399,6 +422,7 @@ const UserList = ({ users, navigateToPage }) => {
             ))}
           </div>
         )}
+
         {/* Stats Section */}
         {users.length > 0 && (
           <div className="mt-16 max-w-4xl mx-auto">
@@ -409,7 +433,9 @@ const UserList = ({ users, navigateToPage }) => {
               </div>
               <div className="bg-black/40 backdrop-blur-lg border border-purple-500/30 rounded-xl p-6 text-center">
                 <div className="text-3xl font-bold text-purple-400 mb-2">
-                  {users.length > 0 ? Math.round(users.reduce((sum, user) => sum + parseInt(user.age), 0) / users.length) : 0}
+                  {users.length > 0
+                    ? Math.round(users.reduce((sum, user) => sum + parseInt(user.age), 0) / users.length)
+                    : 0}
                 </div>
                 <div className="text-white font-semibold">Average Age</div>
               </div>
